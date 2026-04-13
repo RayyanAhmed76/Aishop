@@ -60,6 +60,27 @@
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   }
 
+  function readFileAsBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var s = String(reader.result);
+        var comma = s.indexOf(",");
+        var b64 = comma >= 0 ? s.slice(comma + 1) : s;
+        resolve({
+          name: file.name,
+          mimeType: file.type || "application/octet-stream",
+          size: file.size,
+          data: b64,
+        });
+      };
+      reader.onerror = function () {
+        reject(reader.error || new Error("Could not read file"));
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   fileInput.addEventListener("change", function () {
     renderFileList(fileInput.files);
   });
@@ -126,29 +147,38 @@
       origin = window.location.origin || "";
     } catch (_) {}
 
-    var fd = new FormData();
-    for (var i = 0; i < files.length; i++) {
-      fd.append("files", files[i], files[i].name);
+    submitBtn.disabled = true;
+    setStatus(files.length ? "Encoding files…" : "Sending…", "muted");
+
+    var fileEntries = [];
+    try {
+      for (var i = 0; i < files.length; i++) {
+        fileEntries.push(await readFileAsBase64(files[i]));
+      }
+    } catch (readErr) {
+      setStatus("Error reading files: " + (readErr && readErr.message ? readErr.message : readErr), "err");
+      submitBtn.disabled = false;
+      return;
     }
-    fd.append("urls", urls.join("\n"));
-    fd.append("urlsJson", JSON.stringify(urls));
-    fd.append(
-      "metadata",
-      JSON.stringify({
+
+    var payload = {
+      urls: urls,
+      metadata: {
         submittedAt: new Date().toISOString(),
         pageOrigin: origin,
-        fileCount: files.length,
+        fileCount: fileEntries.length,
         urlCount: urls.length,
-      })
-    );
+      },
+      files: fileEntries,
+    };
 
-    submitBtn.disabled = true;
     setStatus("Sending…", "muted");
 
     try {
       var res = await fetch(API_PATH, {
         method: "POST",
-        body: fd,
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         var errText = await res.text().catch(function () {

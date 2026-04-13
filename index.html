@@ -12,14 +12,14 @@
       <h1>Submit to n8n</h1>
       <p class="lede">
         Upload documents and/or paste public URLs. Your browser sends one
-        <code>POST</code> to this app’s API; the server forwards multipart data to n8n (webhook URL stays on the server).
+        <code>application/json</code> body (files as base64 in <code>files[].data</code>, plus <code>urls</code> and <code>metadata</code>); the API forwards that JSON to n8n. Very large files may hit server limits.
       </p>
     </header>
 
     <form id="submit-form" class="card" novalidate>
       <fieldset class="field">
         <legend>Documents</legend>
-        <p class="hint">Word, PDF, plain text, PowerPoint, or CSV — multiple files allowed.</p>
+        <p class="hint">Word, PDF, plain text, PowerPoint, or CSV — multiple files allowed. Each file is included as base64 in <code>files[].data</code>.</p>
         <label class="file-drop" id="file-drop">
           <input
             id="file-input"

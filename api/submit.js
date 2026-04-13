@@ -1,5 +1,5 @@
 /**
- * Proxies multipart POST to n8n. Set N8N_WEBHOOK_URL in Vercel project env (do not commit).
+ * Accepts JSON (files as base64), forwards to n8n. Set N8N_WEBHOOK_URL in env.
  */
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -19,21 +19,38 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: "Server misconfigured" });
   }
 
-  var contentType = req.headers["content-type"];
-  if (!contentType || !String(contentType).toLowerCase().includes("multipart/form-data")) {
-    return res.status(400).json({ error: "Expected multipart/form-data" });
+  var contentType = String(req.headers["content-type"] || "").toLowerCase();
+  if (!contentType.includes("application/json")) {
+    return res.status(400).json({ error: "Expected application/json" });
   }
 
-  var body = await readBody(req);
-  if (!body.length) {
+  var buf = await readBody(req);
+  if (!buf.length) {
     return res.status(400).json({ error: "Empty body" });
   }
+
+  var payload;
+  try {
+    payload = JSON.parse(buf.toString("utf8"));
+  } catch (_) {
+    return res.status(400).json({ error: "Invalid JSON" });
+  }
+
+  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+    return res.status(400).json({ error: "Body must be a JSON object" });
+  }
+
+  if (payload.files !== undefined && !Array.isArray(payload.files)) {
+    return res.status(400).json({ error: "files must be an array" });
+  }
+
+  var out = JSON.stringify(payload);
 
   try {
     var n8nRes = await fetch(webhook.trim(), {
       method: "POST",
-      headers: { "Content-Type": contentType },
-      body: body,
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: out,
     });
     var text = await n8nRes.text();
     res.status(n8nRes.status);
