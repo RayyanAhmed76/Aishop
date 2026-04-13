@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Send files & links to n8n</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <h1>Submit to n8n</h1>
+      <p class="lede">
+        Upload documents and/or paste public URLs. Your browser sends one
+        <code>POST</code> to this app’s API; the server forwards multipart data to n8n (webhook URL stays on the server).
+      </p>
+    </header>
+
+    <form id="submit-form" class="card" novalidate>
+      <fieldset class="field">
+        <legend>Documents</legend>
+        <p class="hint">Word, PDF, plain text, PowerPoint, or CSV — multiple files allowed.</p>
+        <label class="file-drop" id="file-drop">
+          <input
+            id="file-input"
+            type="file"
+            name="files"
+            multiple
+            accept=".doc,.docx,.pdf,.txt,.ppt,.pptx,.csv,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf,text/plain,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/csv"
+          />
+          <span class="file-drop__text">Choose files or drag them here</span>
+        </label>
+        <ul id="file-list" class="file-list" hidden></ul>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend>Links</legend>
+        <p class="hint">One URL per line, or separate with commas. Use publicly reachable URLs (not <code>localhost</code>) so n8n cloud can fetch them.</p>
+        <textarea
+          id="urls-input"
+          name="urls"
+          rows="5"
+          placeholder="https://example.com/doc.pdf&#10;https://cdn.example.com/data.csv"
+        ></textarea>
+      </fieldset>
+
+      <div class="actions">
+        <button type="submit" id="submit-btn" class="btn btn--primary">Send to n8n</button>
+        <button type="button" id="reset-btn" class="btn btn--ghost">Clear form</button>
+      </div>
+
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </form>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
